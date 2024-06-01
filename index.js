@@ -1,8 +1,24 @@
 import express from 'express';
+import session from 'express-session'; //fazendo que o HTTP seja visto como um protolo statefull
+// nao é http que tera o estado e sim nosso aplicação.
+import cookieParser from 'cookie-parser';
 const host = "0.0.0.0";
 const port = 3000;
 const app = express();
 
+//para permitir que informações sejam mantidas e trocadas enre cleinte e servidor, tais podem ser armazenadas em cookies. para possibilitar que nossa aplicação manipule cookies instalar o modulo cookie-parser.
+
+// para controlar estados e informaçoes exclusivas para um determinado usuario entre todos é preciso estabelecer uma sessao para cada um dos usuarios. para isso é necessario instalar modulo express-session
+app.use(session({
+    secret: 'MinH4Ch4v3S3cr3t4',//chave para assinar os dados da sessao
+    resave: true, // salva a sessão a cada requisição HTTP
+    saveUninitialized: true,
+    cookie: {//tempo de vida da sessão
+        maxAge: 1000 * 60 * 15 // 15 minutos permanecera autenticado 
+    }
+}));
+
+app.use(cookieParser());// habilita o modulo cookie-parser. Mais um Middleware para permitir que a aplicaçao manipule cookies.
 let listaEmpresas = [];
 //manipular o express para manipular corretamendo os dados quando forem submetidos via post
 app.use(express.urlencoded({ extended: true })); //habilita a biblioca query string 
@@ -188,10 +204,52 @@ function cadastrarEmpresas(requisicao, resposta) {
 
 
 }
-//quando um usuario enviar uma requisiçao do tipo post para o end point /cadastrodeEmpresas acionar a funçao cadastrarEmpresas.
-app.post('/CadastrodeEmpresas', cadastrarEmpresas)
+function autenticarUsuario(requisicao, resposta) {
+    const usuario = requisicao.body.usuario;
+    const senha = requisicao.body.senha;
+    if (usuario == 'felipe' && senha == '03204') {
+        requisicao.session.usuarioAutenticado = true;
+        resposta.cookie('dataUltimoAcesso', new Date().toLocaleString(), {
+            httpOnly: true,
+            maxAge: 1000 * 60 * 15 * 24 *30
+        });
+        resposta.redirect('/');
+    }
+    else {
+        resposta.write('<!DOCTYPE html>');
+        resposta.write('<html>');
+        resposta.write('<head>');
+        resposta.write('<meta charset="UTF-8">');
+        resposta.write('<title>Login ou Senha Invalida</title>');
+        resposta.write('</head>');
+        resposta.write('<body>');
+        resposta.write('<h1>Usuário ou senha inválidos</h1>');
+        resposta.write('<p>Por favor, tente novamente</p>');
+        resposta.write('<p><a href="/login.html">Voltar</a></p>');
+        if(requisicao.cookies.dataUltimoAcesso){
+            resposta.write('<p>Ultimo acesso: ' + requisicao.cookies.dataUltimoAcesso + '</p>');
+        }
+        resposta.write('</body>');
+        resposta.write('</html>');
+        resposta.end();
+    }
+}
+app.post('/login', autenticarUsuario);
 
-app.get('/listarEmpresas', (req, resp) => {
+app.get('/login', (req, resp) => {
+    resp.redirect('/login.html');
+});
+
+app.get('/logout', (req, resp) => {
+    req.session.destroy();
+    resp.redirect('/login.html');
+});
+
+
+//quando um usuario enviar uma requisiçao do tipo post para o end point /cadastrodeEmpresas acionar a funçao cadastrarEmpresas.
+app.post('/CadastrodeEmpresas', usuarioAutenticado, cadastrarEmpresas)
+
+app.get('/listarEmpresas', usuarioAutenticado, (req, resp) => {
     resp.write('<!DOCTYPE html>');
     resp.write('<html>');
     resp.write('<head>');
@@ -229,13 +287,31 @@ app.get('/listarEmpresas', (req, resp) => {
     resp.write('</table>');
     resp.write('<button><a href="/CadastrodeEmpresas.html">Cadastrar nova empresa</a></button>');
     resp.write('<button><a href="/index.html">Voltar</a></button>');
-    resp.write('</body');
+    resp.write('<br>');
+    if(req.cookies.dataUltimoAcesso){
+        resp.write('<p>Ultimo acesso: ' + req.cookies.dataUltimoAcesso + '</p>');
+    }
+    resp.write('</body>');
     resp.write('<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>')
     resp.write('</html>');
     resp.end();
 });
-
+//funçao para verificar se o usuario esta autenticado e autorizado (middleware)
+function usuarioAutenticado(requisicao, resposta, next) {
+    if (requisicao.session.usuarioAutenticado) {
+        next(); // permitir que a resição continue a ser processada
+    }
+    else {
+        resposta.redirect('/login.html');
+    }
+}
+// permitir que os usuarios acessem a pasta "publico".
 app.use(express.static(path.join(process.cwd(), '/publico')));
+
+// permitir que os usuarios tenham acesso ao conteudo da pasta "protegido"
+//verificando antes se o usuario esta autenticado
+app.use(usuarioAutenticado, express.static(path.join(process.cwd(), '/protegido')));
+
 
 app.listen(port, host, () => {
     console.log(`Servidor rodando em http://${host}:${port}`);

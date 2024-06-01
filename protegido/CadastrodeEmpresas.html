@@ -9,6 +9,22 @@
         integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
 </head>
 <body>
+    <ul class="nav justify-content-center">
+        <li class="nav-item">
+            <a class="nav-link active" aria-current="page" href="index.html">Inicio</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="CadastrodeEmpresas.html">Cadastro de Empresas</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="/listarEmpresas">Relatorio</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="/logout">Sair</a>
+          </li>
+    </ul>
+    <br />
+    <h3 style="text-align: center;">Aplicação Web Cadastro Empresas</h3>
     <div class="container" style="border: solid 2px; padding: 15px;">
         <form method="post" action="/CadastrodeEmpresas" class="row g-3 needs-validation" novalidate>
             <div class="col-md-4">
@@ -69,7 +85,8 @@
             </div>
             <div class="col-md-3">
                 <label for="validationCustom05" class="form-label">Telefone</label>
-                <input type="number" class="form-control" id="validationCustom05" name="telefone" placeholder="(XX) XXXXX-XXXX" required>
+                <input type="number" class="form-control" id="validationCustom05" name="telefone"
+                    placeholder="(XX) XXXXX-XXXX" required>
             </div>
             <div class="col-md-3">
                 <label for="validationCustom05" class="form-label">CNPJ</label>
