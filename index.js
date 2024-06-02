@@ -172,6 +172,8 @@ function cadastrarProdutos(requisicao, resposta) {
 
         </html>`);
 
+        resposta.end();
+
 
 
 
